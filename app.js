@@ -20,6 +20,7 @@ app.configure(function() {
 
 var server = http.createServer(app).listen(app.get('port'), function() {
 	console.log('Express server is listening on port: ' + app.get('port'));
+<<<<<<< HEAD
 });
 
 var io = require('socket.io').listen(server);
@@ -44,3 +45,6 @@ io.sockets.on('connection', function(socket) {
 		io.sockets.json.send({'event': 'userSplit', 'name': ID, 'time': time});
 	});
 });
+=======
+});
+>>>>>>> 4d502136fa63fea32110a1a913e77aab31fee34f
