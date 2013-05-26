@@ -1,3 +1,5 @@
+var util = require('util');
+
 var http = require('http');
 var path = require('path');
 var express = require('express');
@@ -28,6 +30,9 @@ var io = require('socket.io').listen(server);
 io.set('log level', 1);
 io.sockets.on('connection', function(socket) {
 	// for the simplicity use first 5 symbols of user as ID
+	console.log(socket.id + ' connected');
+	console.log(socket);
+	
 	var ID = (socket.id).toString().substr(0, 5);
 	var time = (new Date()).toLocaleTimeString();
 	// send client message about successful connection
@@ -36,6 +41,8 @@ io.sockets.on('connection', function(socket) {
 	socket.broadcast.json.send({'event': 'userJoined', 'name': ID, 'time': time});
 	// add handler to incoming messages
 	socket.on('message', function(msg) {
+		console.log(socket.id + ' sent message');
+	
 		var time = (new Date()).toLocaleTimeString();
 		socket.json.send({'event': 'messageSent', 'name': ID, 'text': msg, 'time': time});
 		socket.broadcast.json.send({'event': 'messageReceived', 'name': ID, 'text': msg, 'time': time});
