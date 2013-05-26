@@ -2,6 +2,7 @@ var http = require('http');
 var path = require('path');
 var express = require('express');
 var app = module.exports = express();
+// todo: add cradle
 
 app.configure(function() {
 	app.set('port', process.env.PORT || 3000);
