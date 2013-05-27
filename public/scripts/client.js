@@ -7,7 +7,6 @@ strings = {
 };
 
 window.onload = function() {
-    // Создаем соединение с сервером; websockets почему-то в Хроме не работают, используем xhr
     if (navigator.userAgent.toLowerCase().indexOf('chrome') != -1) {
         socket = io.connect('http://127.0.0.1:3000', {'transports': ['xhr-polling']});
     } else {
@@ -15,17 +14,13 @@ window.onload = function() {
     }
     socket.on('connect', function () {
         socket.on('message', function (msg) {
-            // Добавляем в лог сообщение, заменив время, имя и текст на полученные
             document.querySelector('#log').innerHTML += strings[msg.event].replace(/\[([a-z]+)\]/g, '<span class="$1">').replace(/\[\/[a-z]+\]/g, '</span>').replace(/\%time\%/, msg.time).replace(/\%name\%/, msg.name).replace(/\%text\%/, unescape(msg.text).replace('<', '&lt;').replace('>', '&gt;')) + '<br>';
-            // Прокручиваем лог в конец
             document.querySelector('#log').scrollTop = document.querySelector('#log').scrollHeight;
         });
-        // При нажатии <Enter> или кнопки отправляем текст
+		
         document.querySelector('#input').onkeypress = function(e) {
             if (e.which == '13') {
-                // Отправляем содержимое input'а, закодированное в escape-последовательность
                 socket.send(escape(document.querySelector('#input').value));
-                // Очищаем input
                 document.querySelector('#input').value = '';
             }
         };

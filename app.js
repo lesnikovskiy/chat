@@ -19,6 +19,10 @@ app.configure(function() {
 	app.set('views', path.join(__dirname, '/views'));
 	app.set('view engine', 'ejs');
 
+	app.use(function (req, res, next) {
+		res.header('Access-Control-Allow-Origin', 'true');
+		next();
+	});
 	app.use(express.favicon());
 	app.use(express.logger('dev'));
 	app.use(express.bodyParser());
@@ -33,19 +37,19 @@ app.configure(function() {
 });
 
 function auth (req, res, next) {
-	if (!req.session.username)
+	if (!req.session.username) {
 		res.redirect('/login');
-	
-	next();
+	} else {
+		next();
+	}
 }
 
 app.get('/', auth, function (req, res) {
-	console.log(req.session.username);
-	res.render('chat', { title: 'Chat', sessionID: res.session.sessionID });
+	res.redirect('/chat');
 });
 
 app.get('/chat', auth, function (req, res) {
-	res.render('chat', { title: 'Chat', sessionID: res.session.sessionID });
+	res.render('chat', { title: 'Chat'});
 });
 
 app.get('/login', function (req, res) {
@@ -54,7 +58,6 @@ app.get('/login', function (req, res) {
 
 app.post('/login', function (req, res) {
 	req.session.username = req.body.username;
-	console.log(util.inspect(res));
 	res.redirect('/chat');
 });
 
@@ -62,7 +65,7 @@ var server = http.createServer(app).listen(app.get('port'), function() {
 	console.log('Express server is listening on port: ' + app.get('port'));
 });
 
-var io = require('socket.io').listen(server).set('authorization', function (data, accept) {
+var io = require('socket.io').listen(server).set('authorization', function (data, accept) {	
 	if (!data.headers.cookie)
 		return accept('No cookie transmitted', false);
 		
@@ -83,6 +86,7 @@ io.set('log level', 1);
 io.sockets.on('connection', function(socket) {
 	// for the simplicity use first 5 symbols of user as ID
 	var hs = socket.handshake.session;
+	console.log(socket.request.headers.cookie);
 	console.log('Session ID: ' + hs.sessionID);
 	console.log(socket.id + ' connected');	
 	
