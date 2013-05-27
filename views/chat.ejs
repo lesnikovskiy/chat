@@ -1,0 +1,8 @@
+<% layout('layout') %>
+<% stylesheet('/styles/chat.css') %>
+<% script('http://127.0.0.1:3000/socket.io/socket.io.js') %>
+<% script('/scripts/client.js') %>
+
+<div id="log"></div>
+<input type="text" id="input" autofocus>
+<input type="submit" id="send" value="Send">
