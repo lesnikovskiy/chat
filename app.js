@@ -5,10 +5,12 @@ var path = require('path');
 var express = require('express');
 var app = module.exports = express();
 var engine = require('ejs-locals');
-var cookie = require('express/node_modules/cookie');
-var MemoryStore = express.session.MemoryStore;
-var sessionStore = new MemoryStore();
 // good source http://kenny.deeprosoft.com/socket-io-%D0%B8-express-%D1%81%D0%B2%D1%8F%D0%B7%D1%8B%D0%B2%D0%B0%D0%B5%D0%BC-%D0%B2%D1%81%D0%B5-%D0%B2%D0%BC%D0%B5%D1%81%D1%82%D0%B5/
+// github source https://github.com/DanielBaulig/sioe-demo/blob/master/app.js
+var connect = require('express/node_modules/connect');
+var parseCookie = connect.utils.parseCookie;
+var MemoryStore = connect.middleware.session.MemoryStore;
+var store = new MemoryStore();
 
 app.configure(function() {
 	app.engine('ejs', engine);
@@ -23,7 +25,7 @@ app.configure(function() {
 	app.use(express.methodOverride());
 	app.use(express.static(path.join(__dirname, '/public')));
 	app.use(express.cookieParser());
-	app.use(express.session({secret: "qwerty1234567890", key: 'express.sid', store: sessionStore}));
+	app.use(express.session({secret: "qwerty1234567890", key: 'express.sid', store: store = new MemoryStore()}));
 	app.use(app.router);
 	app.use(express.errorHandler({
 		dumpExceptions: true, showStack: true
@@ -39,11 +41,11 @@ function auth (req, res, next) {
 
 app.get('/', auth, function (req, res) {
 	console.log(req.session.username);
-	res.render('chat', { title: 'Chat' });
+	res.render('chat', { title: 'Chat', sessionID: res.session.sessionID });
 });
 
 app.get('/chat', auth, function (req, res) {
-	res.render('chat', { title: 'Chat' });
+	res.render('chat', { title: 'Chat', sessionID: res.session.sessionID });
 });
 
 app.get('/login', function (req, res) {
@@ -52,6 +54,7 @@ app.get('/login', function (req, res) {
 
 app.post('/login', function (req, res) {
 	req.session.username = req.body.username;
+	console.log(util.inspect(res));
 	res.redirect('/chat');
 });
 
@@ -59,28 +62,28 @@ var server = http.createServer(app).listen(app.get('port'), function() {
 	console.log('Express server is listening on port: ' + app.get('port'));
 });
 
-var io = require('socket.io').listen(server);
-// switch off detailed log for production
-io.set('log level', 1);
-// enable to get session from express
-io.set('authorization', function (data, accept) {
-	if (data.headers.cookie) {
-		data.cookie = cookie.parse(data.headers.cookie);
-		data.sessionID = data.cookie['express.sid'];
-		sessionStore.get(data.sessionID, function (err, session) {
-			if (err || !session) {
-				accept('Error', false);
-			} else {
-				data.session = session;
-				accept(null, true);
-			}
-		});
-	} else {
-		return accept('No cookie transmitted.', false);
-	}
+var io = require('socket.io').listen(server).set('authorization', function (data, accept) {
+	if (!data.headers.cookie)
+		return accept('No cookie transmitted', false);
+		
+	data.cookie = parseCookie(data.headers.cookie);
+	data.sessionID = data.cookie['express.sid'];
+	
+	store.load(data.sessionID, function (err, session) {
+		if (err || !session) 
+			return accept('Error', false);
+			
+		data.session = session;
+		return accept(null, true);
+	});
 });
+// switch off detailed log for production
+io.set('log level', 1); 
+
 io.sockets.on('connection', function(socket) {
 	// for the simplicity use first 5 symbols of user as ID
+	var hs = socket.handshake.session;
+	console.log('Session ID: ' + hs.sessionID);
 	console.log(socket.id + ' connected');	
 	
 	var ID = (socket.id).toString().substr(0, 5);
@@ -98,6 +101,14 @@ io.sockets.on('connection', function(socket) {
 		socket.json.send({'event': 'messageSent', 'name': ID, 'text': msg, 'time': time});
 		socket.broadcast.json.send({'event': 'messageReceived', 'name': ID, 'text': msg, 'time': time});
 	});
+	
+	socket.on('set_session', function(data) {
+		hs.reload(function() {
+			hs.value = data;
+			hs.touch().save();
+		});
+	});
+	
 	socket.on('disconnect', function() {
 		var time = (new Date()).toLocaleTimeString();
 		io.sockets.json.send({'event': 'userSplit', 'name': ID, 'time': time});
