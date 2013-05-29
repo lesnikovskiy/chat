@@ -63,7 +63,7 @@ app.get('/login', function (req, res) {
 });
 
 app.post('/login', function (req, res) {
-	res.cookie('express.sid', req.sessionID, {httpOnly: true});
+	//res.cookie('express.sid', req.sessionID, {httpOnly: true});
 	req.session.username = req.body.username;
 	res.redirect('/chat');
 });

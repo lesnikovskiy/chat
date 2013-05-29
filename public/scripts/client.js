@@ -8,9 +8,9 @@ strings = {
 
 window.onload = function() {
     if (navigator.userAgent.toLowerCase().indexOf('chrome') != -1) {
-        socket = io.connect('http://127.0.0.1:3000', {'transports': ['xhr-polling']});
+        socket = io.connect('http://localhost:3000', {'transports': ['xhr-polling']});
     } else {
-        socket = io.connect('http://127.0.0.1:3000');
+        socket = io.connect('http://localhost:3000');
     }
     socket.on('connect', function () {
         socket.on('message', function (msg) {
