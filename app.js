@@ -6,9 +6,6 @@ var express = require('express');
 var app = module.exports = express();
 var engine = require('ejs-locals');
 var cookie = require('cookie');
-// good source http://kenny.deeprosoft.com/socket-io-%D0%B8-express-%D1%81%D0%B2%D1%8F%D0%B7%D1%8B%D0%B2%D0%B0%D0%B5%D0%BC-%D0%B2%D1%81%D0%B5-%D0%B2%D0%BC%D0%B5%D1%81%D1%82%D0%B5/
-// github source https://github.com/DanielBaulig/sioe-demo/blob/master/app.js
-var connect = require('express/node_modules/connect');
 var MemoryStore = express.session.MemoryStore;
 var store = new MemoryStore();
 
