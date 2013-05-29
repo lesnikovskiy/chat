@@ -20,8 +20,14 @@ app.configure(function() {
 	app.set('view engine', 'ejs');
 
 	app.use(function (req, res, next) {
-		res.header('Access-Control-Allow-Origin', 'true');
-		next();
+		res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+		res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS');
+		res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Cookie, Set-Cookie');
+		
+		if ('OPTIONS' == req.method)
+			return res.send(200);
+		else	
+			next();
 	});
 	app.use(express.favicon());
 	app.use(express.logger('dev'));
@@ -57,6 +63,7 @@ app.get('/login', function (req, res) {
 });
 
 app.post('/login', function (req, res) {
+	res.cookie('express.sid', req.sessionID, {httpOnly: true});
 	req.session.username = req.body.username;
 	res.redirect('/chat');
 });
@@ -66,6 +73,7 @@ var server = http.createServer(app).listen(app.get('port'), function() {
 });
 
 var io = require('socket.io').listen(server).set('authorization', function (data, accept) {	
+	console.log(util.inspect(data.headers));
 	if (!data.headers.cookie)
 		return accept('No cookie transmitted', false);
 		
@@ -83,13 +91,10 @@ var io = require('socket.io').listen(server).set('authorization', function (data
 // switch off detailed log for production
 io.set('log level', 1); 
 
-io.sockets.on('connection', function(socket) {
-	// for the simplicity use first 5 symbols of user as ID
+io.sockets.on('connection', function(socket) {	
 	var hs = socket.handshake.session;
-	console.log(socket.request.headers.cookie);
-	console.log('Session ID: ' + hs.sessionID);
-	console.log(socket.id + ' connected');	
 	
+	// for the simplicity use first 5 symbols of user as ID
 	var ID = (socket.id).toString().substr(0, 5);
 	var time = (new Date()).toLocaleTimeString();
 	// send client message about successful connection
