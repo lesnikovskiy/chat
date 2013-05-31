@@ -9,6 +9,8 @@ var cookie = require('cookie');
 var MemoryStore = express.session.MemoryStore;
 var store = new MemoryStore();
 
+var clients = {};
+
 app.configure(function() {
 	app.engine('ejs', engine);
 
@@ -83,18 +85,19 @@ var io = require('socket.io').listen(server).set('authorization', function (data
 		return accept('No cookie transmitted', false);
 		
 	data.cookie = cookie.parse(data.headers.cookie);
-	data.sessionID = data.cookie['express.sid'];
-	data.sessionStore = app.sessionStore;
-	
-	if (data.sessionID) {
+	var sessionCookie = data.cookie['express.sid'];
+	if (sessionCookie) {
 		var exp = /\:(\w+\-*\w+\_*)./gi;
-		var sessionID = exp.exec(data.sessionID)[1];
+		var sessionID = exp.exec(sessionCookie)[1];
 	}
 	
 	if (!sessionID)
 		return data('Couldn\'t parse session ID', false);
+		
+	data.sessionID = sessionID;
+	data.sessionStore = app.sessionStore;	
 	
-	app.sessionStore.get(sessionID, function (err, session) {		
+	app.sessionStore.get(data.sessionID, function (err, session) {		
 		if (err || !session) 
 			return accept('Error', false);
 			
@@ -108,11 +111,14 @@ io.set('log level', 1);
 
 io.sockets.on('connection', function(socket) {	
 	var hs = socket.handshake.session;
-	console.log(util.inspect(hs));
-	
+	console.log(util.inspect(socket.handshake));
+	clients[hs.sessionID] = socket;
+	//console.log(util.inspect(clients));
+		
 	// for the simplicity use first 5 symbols of user as ID
 	var ID = hs.username ? hs.username : (socket.id).toString().substr(0, 5);
 	var time = (new Date()).toLocaleTimeString();
+	
 	// send client message about successful connection
 	socket.json.send({'event': 'userJoined', 'name': ID, 'time': time});
 	// send the other users notification that new client connected
